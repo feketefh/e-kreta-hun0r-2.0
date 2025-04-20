@@ -1,12 +1,14 @@
-from datetime import datetime, timedelta
-from ..idp.auth_session import Auth_Session
-from .models import *
-from typing import Literal, TypeVar, Type, get_origin, get_args
+from typing import Literal, TypeVar, Type, get_origin, get_args, TYPE_CHECKING
 from requests import Response
+from datetime import datetime, timedelta
+from .models import *
+from ..idp.auth_session import Auth_Session
 from pydantic import BaseModel
 
 
-T = TypeVar("T")    
+T = TypeVar("T")
+
+
 def mobile_request(
     session: Auth_Session,
     method: Literal["GET", "DELETE", "POST", "PUT"],
@@ -85,9 +87,8 @@ def get_class_average(
         params=params,
     )
 
-def get_class_master(
-    session: Auth_Session, Uids: list[str] = ...
-) -> list[ClassMaster]:
+
+def get_class_master(session: Auth_Session, Uids: list[str] = ...) -> list[ClassMaster]:
     if Uids is not ...:
         params: dict[str, str] = {"Uids": " ".join(Uids)}
 
@@ -102,10 +103,7 @@ def get_class_master(
 
 def get_consulting_hour(session: Auth_Session, Uid: str) -> ConsultingHour:
     return mobile_request(
-        session,
-        "GET",
-        f"sajat/Fogadoorak/{Uid}",
-        model=ConsultingHour
+        session, "GET", f"sajat/Fogadoorak/{Uid}", model=ConsultingHour
     )
 
 
@@ -126,12 +124,9 @@ def get_consulting_hours(
         params=params,
     )
 
+
 def get_device_state(session: Auth_Session) -> bool:
-    return mobile_request(
-        session,
-        "GET",
-        "TargyiEszkoz/IsEszkozKiosztva"
-    ).json()
+    return mobile_request(session, "GET", "TargyiEszkoz/IsEszkozKiosztva").json()
 
 
 def get_evaluations(
@@ -144,31 +139,21 @@ def get_evaluations(
         params["datumIg"] = to_date
 
     return mobile_request(
-        session,
-        "GET",
-        "sajat/Ertekelesek",
-        model=list[Evaluation],
-        params=params
+        session, "GET", "sajat/Ertekelesek", model=list[Evaluation], params=params
     )
+
 
 def get_groups(session: Auth_Session) -> list[Group]:
-    return mobile_request(session, "GET", "sajat/OsztalyCsoportok", model=list[Group]).json()
+    return mobile_request(session, "GET", "sajat/OsztalyCsoportok", model=list[Group])
+
 
 def get_guardian4t(session: Auth_Session) -> Guardian4T:
-    return mobile_request(
-        session,
-        "GET",
-        "sajat/GondviseloAdatlap",
-        model=Guardian4T
-    )
+    return mobile_request(session, "GET", "sajat/GondviseloAdatlap", model=Guardian4T)
+
 
 def get_homework(session: Auth_Session, id: str) -> Homework:
-    return mobile_request(
-        session,
-        "GET",
-        f"sajat/HaziFeladatok/{id}",
-        model=Homework
-    )
+    return mobile_request(session, "GET", f"sajat/HaziFeladatok/{id}", model=Homework)
+
 
 def get_homeworks(
     session: Auth_Session, from_date: datetime = ..., to_date: datetime = ...
@@ -187,10 +172,7 @@ def get_homeworks(
 
 
 def get_lep_events(session: Auth_Session) -> list[LepEvent]:
-    return mobile_request(
-        session, "GET", "Lep/Eloadasok",
-        model=LepEvent
-    )
+    return mobile_request(session, "GET", "Lep/Eloadasok", model=LepEvent)
 
 
 def get_lesson(session: Auth_Session, LessonUid: str) -> Lesson:
@@ -242,7 +224,9 @@ def get_notes(
 
 
 def get_noticeboard_items(session: Auth_Session) -> list[NoticeBoardItem]:
-    return mobile_request(session, "GET", "FaliujsagElemek", model=list[NoticeBoardItem])
+    return mobile_request(
+        session, "GET", "FaliujsagElemek", model=list[NoticeBoardItem]
+    )
 
 
 def get_ommissions(
@@ -268,7 +252,7 @@ def get_registration_state(session: Auth_Session) -> dict | str | int | list:
         session,
         "GET",
         "https://{institute_code}.e-kreta.hu/ellenorzo/v3/TargyiEszkoz/IsRegisztralt",
-    ).json()
+    )
 
 
 def get_schoolyear_calendar(
@@ -278,8 +262,9 @@ def get_schoolyear_calendar(
         session,
         "GET",
         "Intezmenyek/TanevRendjeElemek",
-        model=list[SchoolYearCalendarEntry]
+        model=list[SchoolYearCalendarEntry],
     )
+
 
 def get_student(session: Auth_Session) -> Student:
     return mobile_request(session, "GET", "TanuloAdatlap", model=Student)
@@ -319,6 +304,7 @@ def get_timetable_weeks(
         model=list[TimeTableWeek],
         params=params,
     )
+
 
 def post_bank_account_number(
     session: Auth_Session,

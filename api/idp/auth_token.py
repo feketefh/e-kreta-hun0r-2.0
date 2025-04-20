@@ -1,144 +1,208 @@
-from functools import partial
-from datetime import datetime, timedelta
-from pydantic import BaseModel, Field
+import requests
 import jwt
+from pydantic import BaseModel, Field
+from datetime import datetime, timezone
 
-field = partial(Field, frozen=True)
+
+class Header(BaseModel):
+    alg: str = Field(alias="alg", frozen=True)
+    """Signature or encryption algorithm"""
+    kid: str = Field(alias="kid", frozen=True)
+    """Key ID"""
+    x5t: str = Field(alias="x5t", frozen=True)
+    """X.509 Fingerprint (SHA-1)"""
+    typ: str = Field(alias="typ", frozen=True)
+    """Type of token"""
+
+
+class AccessToken(BaseModel):
+    iss: str = Field(alias="iss", frozen=True)
+    """Issuer (who created and signed this token)"""
+    nbf: datetime = Field(alias="nbf", frozen=True)
+    """Not valid before"""
+    iat: datetime = Field(alias="iat", frozen=True)
+    """Issued at"""
+    exp: datetime = Field(alias="exp", frozen=True)
+    """Expiration time"""
+
+    def is_expired(self) -> bool:
+        return datetime.now(timezone.utc) > self.exp
+
+    aud: list[str] = Field(alias="aud", frozen=True)
+    """audience (who or what the token is intended for)"""
+    scope: list[str] = Field(alias="scope", frozen=True)
+    """Scope of the token"""
+    amr: list[str] = Field(alias="amr", frozen=True)
+    """Authentication Methods array"""
+    client_id: str = Field(alias="client_id", frozen=True)
+    """Client ID"""
+    sub: str = Field(alias="sub", frozen=True)
+    """Subject (whom the token refers to)"""
+    auth_time: datetime = Field(alias="auth_time", frozen=True)
+    """Time when authentication occurred"""
+    idp: str = Field(alias="idp", frozen=True)
+    """Identity Provider"""
+    kreta_institute_user_idp_unique_id: str = Field(
+        alias="kreta:institute_user_idp_unique_id", frozen=True
+    )
+    """kreta:institute_user_idp_unique_id"""
+    kreta_institute_code: str = Field(alias="kreta:institute_code", frozen=True)
+    """kreta:institute_code"""
+    kreta_institute_user_id: str = Field(alias="kreta:institute_user_id", frozen=True)
+    """kreta:institute_user_id"""
+    kreta_institute_user_unique_id: str = Field(
+        alias="kreta:institute_user_unique_id", frozen=True
+    )
+    """kreta:institute_user_unique_id"""
+    name: str = Field(alias="name", frozen=True)
+    """name"""
+    kreta_user_name: str = Field(alias="kreta:user_name", frozen=True)
+    """kreta:user_name"""
+    role: str = Field(alias="role", frozen=True)
+    """kreta:role"""
+    kreta_user_type: str = Field(alias="kreta:user_type", frozen=True)
+    """kreta:user_type"""
+    sid: str = Field(alias="sid", frozen=True)
+    """Session ID (String identifier for a Session)"""
+    jti: str = Field(alias="jti", frozen=True)
+    """JWT ID (unique identifier for this token)"""
+
+
+class Id_Token(BaseModel):
+    iss: str = Field(alias="iss", frozen=True)
+    """Issuer (who created and signed this token)"""
+    nbf: datetime = Field(alias="nbf", frozen=True)
+    """Not valid before"""
+    iat: datetime = Field(alias="iat", frozen=True)
+    """Issued at"""
+    exp: datetime = Field(alias="exp", frozen=True)
+    """Expiration time"""
+    aud: str = Field(alias="aud", frozen=True)
+    """audience (who or what the token is intended for)"""
+    amr: list[str] = Field(alias="amr", frozen=True)
+    """Authentication Methods array"""
+    nonce: str = Field(alias="nonce", frozen=True)
+    """Unique value associating request to token"""
+    at_hash: str = Field(alias="at_hash", frozen=True)
+    """Access Token hash value"""
+    sid: str = Field(alias="sid", frozen=True)
+    """Session ID (String identifier for a Session)"""
+    sub: str = Field(alias="sub", frozen=True)
+    """Subject (whom the token refers to)"""
+    auth_time: datetime = Field(alias="auth_time", frozen=True)
+    """Time when authentication occurred"""
+    idp: str = Field(alias="idp", frozen=True)
+    """Identity Provider"""
+    email: str = Field(alias="email", frozen=True)
+    """Email address of user"""
+    email_verified: bool = Field(alias="email_verified", frozen=True)
+    """Email address has been verified"""
+    kreta_institute_user_idp_unique_id: str = Field(
+        alias="kreta:institute_user_idp_unique_id", frozen=True
+    )
+    """kreta:institute_user_idp_unique_id"""
+    kreta_institute_code: str = Field(alias="kreta:institute_code", frozen=True)
+    """kreta:institute_code"""
+    kreta_institute_user_id: str = Field(alias="kreta:institute_user_id", frozen=True)
+    """kreta:institute_user_id"""
+    kreta_institute_user_unique_id: str = Field(
+        alias="kreta:institute_user_unique_id", frozen=True
+    )
+    """kreta:institute_user_unique_id"""
+    name: str = Field(alias="name", frozen=True)
+    """name"""
+    kreta_user_name: str = Field(alias="kreta:user_name", frozen=True)
+    """kreta:user_name"""
+    role: str = Field(alias="role", frozen=True)
+    """kreta:role"""
+    mfa_enabled: bool = Field(alias="mfa_enabled", frozen=True)
+    """Multi Factor Authentication (MFA) enabled"""
+    kreta_user_type: str = Field(alias="kreta:user_type", frozen=True)
+    """kreta:user_type"""
+
 
 class Auth_Token:
-    def __init__(self, token: str, id_token: str, token_type: str, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(
+        self,
+        id_token: str,
+        access_token: str,
+        expires_in: int,
+        token_type: str,
+        refresh_token: str,
+        scope: str,
+        *args,
+        **kwargs,
+    ) -> None:
         self.token_type = token_type
-        self.token = token
-        self.head = jwt.get_unverified_header(token)
-        self.body = jwt.decode(token, verify=False, algorithms=[self.head["alg"]])
+        self.expires_in = expires_in
+        """duration of the token not actual seconds until expiration"""
+        self.scope = scope.split()
+
+        self.refresh_token = refresh_token
+
+        self.token = access_token
+        self.head = Header.model_validate(jwt.get_unverified_header(access_token))
+        self.body = AccessToken.model_validate(
+            jwt.decode(
+                access_token,
+                options={"verify_signature": False},
+                algorithms=[self.head.alg],
+            )
+        )
+
         self.id_token = id_token
-        self.id_head = jwt.get_unverified_header(id_token)
-        self.id_body = jwt.decode(id_token, verify=False, algorithms=[self.id_head["alg"]])
+        self.id_head = Header.model_validate(jwt.get_unverified_header(id_token))
+        self.id_body = Id_Token.model_validate(
+            jwt.decode(
+                id_token,
+                options={"verify_signature": False},
+                algorithms=[self.id_head.alg],
+            )
+        )
 
     def __str__(self) -> str:
-        """
-        Returns a string representation of the access token in the format
-        "token_type access_token", for example "Bearer myaccesstoken"
-        """        
         return f"{self.token_type} {self.token}"
-    
-    def __repr__(self) -> str:        
-        """
-        Returns a string representation of the access token.
 
-        Returns
-        -------
-        str
-            A string representation of the access token in the format
-            "token_type access_token", for example "Bearer myaccesstoken"
-        """
-        return self.__str__()
+    def __repr__(self) -> str:
+        return str(self)
 
-class Token(BaseModel):
-    def __str__(self) -> str:
-        """
-        Returns a string representation of the access token in the format
-        "token_type access_token", for example "Bearer myaccesstoken"
-        """        
-        return f"{self.token_type} {self.access_token}"
-    
-    def __repr__(self) -> str:        
-        """
-        Returns a string representation of the access token.
-
-        Returns
-        -------
-        str
-            A string representation of the access token in the format
-            "token_type access_token", for example "Bearer myaccesstoken"
-        """
-        return self.__str__()
-    
     def is_expired(self) -> bool:
-        """Whether the access token has expired."""
-        return datetime.now() > self.exp
-    
-    def expires_in(self) -> timedelta:
-        """The number of seconds until the access token expires."""
-        return self.exp - datetime.now()
-    
-    iss: str = field(alias="iss")
-    """The issuer of the access token."""
-    
-    nbf: datetime = field(alias="nbf")
-    """The time at which the access token becomes valid."""
-    
-    iat: datetime = field(alias="iat")
-    """The time at which the access token was issued."""
-    
-    exp: datetime = field(alias="exp")
-    """The time at which the access token expires."""
-    
-    aud: list[str] = field(alias="sub")
-    """The audience of the access token."""
-    
-    scope: list[str] = field(alias="scope")
-    """The scope of the access token."""
-    
-    amr: list[str] = field(alias="amr")
-    """Authentication Methods."""
-    
-    client_id: str = field(alias="client_id")
-    """The client_id of the access token."""
-    
-    sub: str = field(alias="sub")
-    """The subject of the access token. This is the unique identifier of the user."""
-    
-    auth_time: datetime = field(alias="auth_time")
-    """The time at which the user last authenticated. This is the time when the
-    authentication took place, not when the access token was issued."""
-    
-    idp: str = field(alias="idp")
-    """The Identity Provider of the user."""
-    
-    kreta_institute_user_idp_unique_id: str = field(alias="kreta:institute_user_idp_unique_id")
-    """The unique identifier of the user at the Identity Provider of the user."""
-    
-    kreta_institute_code: str = field(alias="kreta:institute_code")
-    """The code of the institution of the user."""
-    
-    kreta_institute_user_id: str = field(alias="kreta:institute_user_id")
-    """The unique identifier of the user in the institution."""
-    
-    kreta_institute_user_unique_id: str = field(alias="kreta:institute_user_unique_id")
-    """The unique identifier of the user in the institution. This is the identifier that
-    is unique accross all institutions and identity providers."""
-    
-    kreta_school_year_id: str = field(alias="kreta:school_year_id")
-    """The identifier of the school year in the institution."""
-    
-    kreta_school_year_unique_id: str = field(alias="kreta:school_year_unique_id")
-    """The unique identifier of the school year in the institution. This is the identifier that
-    is unique accross all institutions and identity providers."""
-    
-    kreta_institute_unique_id: str = field(alias="")
-    """The unique identifier of the institution. This is the identifier thkreta:institute_unique_idat
-    is unique accross all institutions and identity providers."""
-    
-    name: str = field(alias="name")
-    """The full name of the user."""
-    
-    kreta_user_name: str = field(alias="kreta:user_name")
-    """The username of the user in the institution."""
-    
-    role: str = field(alias="kreta:role")
-    """The role of the user in the institution. The possible values are:
-    - Tanulo (no more are known)"""
-    
-    kreta_user_type: str = field(alias="kreta:user_type")
-    """The type of the user. The possible values are:
-    - Tanulo (no more are known)"""
-    
-    sid: str = field(alias="sid")
-    """The session id of the user. This is the identifier of the user
-    in the session. This is unique accross all institutions and identity providers."""
-    
-    jti: str = field(alias="jti")
-    """The JWT Token Identifier. This is the identifier of the JWT token.
-    This is unique accross all institutions and identity providers."""
+        return self.body.is_expired()
+
+    def refresh(self) -> None:
+        data = {
+            "institute_code": self.body.kreta_institute_code,
+            "refresh_token": self.refresh_token,
+            "grant_type": "refresh_token",
+            "client_id": self.body.client_id,
+        }
+        self.__init__(
+            **requests.request(
+                "POST", "https://idp.e-kreta.hu/connect/token", data=data
+            ).json(),
+        )
+
+    def revoke_refresh_token(self) -> None:
+        """Invalidate refresh token and delete data"""
+        data = {
+            "token": self.refresh_token,
+            "client_id": self.body.client_id,
+        }
+        requests.request(
+            "POST",
+            "https://idp.e-kreta.hu/connect/revocation",
+            data=data,
+        )
+        self.token_type = None
+        self.expires_in = None
+        self.scope = None
+
+        self.refresh_token = None
+
+        self.token = None
+        self.head = None
+        self.body = None
+
+        self.id_token = None
+        self.id_head = None
+        self.id_body = None
