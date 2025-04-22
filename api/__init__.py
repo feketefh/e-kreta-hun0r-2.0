@@ -1,4 +1,3 @@
-from . import idp
-from . import mobile
+from . import dkt, eadmin, global_api, idp, mobile
 
-__all__ = ["idp", "mobile"]
+__all__ = ["idp", "mobile", "dkt", "eadmin", "global_api"]

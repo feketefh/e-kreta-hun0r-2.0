@@ -1,4 +1,4 @@
-AnnouncedTests
+AnnouncedTest
 TantargyNeve	subjectName	string
 BejelentesDatuma	announcedAtAsString	string
 OrarendiOraOraszama	classScheduleNumber	int

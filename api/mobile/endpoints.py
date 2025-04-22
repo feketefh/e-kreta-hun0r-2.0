@@ -1,44 +1,54 @@
-from typing import Literal, TypeVar, Type, get_origin, get_args, TYPE_CHECKING
-from requests import Response
-from datetime import datetime, timedelta
-from .models import *
-from ..idp.auth_session import Auth_Session
-from pydantic import BaseModel
+from __future__ import annotations
+
+from functools import partial
+from typing import TYPE_CHECKING, Literal, Optional
+
+from ..utils.utils import filter_params, request_category, week_dates
+from .models import (
+    AnnouncedTest,
+    ClassAverage,
+    ClassMaster,
+    ConsultingHour,
+    Evaluation,
+    Group,
+    Guardian4T,
+    Homework,
+    LepEvent,
+    Lesson,
+    Note,
+    NoticeBoardItem,
+    Omission,
+    SchoolYearCalendarEntry,
+    Student,
+    SubjectAverage,
+    TimeTableWeek,
+)
+
+if TYPE_CHECKING:
+    from datetime import datetime
+
+    from ..idp.auth_session import Auth_Session
+
+mobile_request = partial(
+    request_category,
+    "https://{institute_code}.e-kreta.hu/ellenorzo/v3/",
+)
 
 
-T = TypeVar("T")
-
-
-def mobile_request(
+def delete_bank_account_number(
     session: Auth_Session,
-    method: Literal["GET", "DELETE", "POST", "PUT"],
-    url: str,
-    *args,
-    model: Type[T] = Response,
-    **kwargs,
-) -> T:
-    url = "https://{institute_code}.e-kreta.hu/ellenorzo/v3/" + url
-
-    r = session.request(method, url, *args, **kwargs)
-
-    if model is Response:
-        return r
-
-    data = r.json()
-
-    origin = get_origin(model)
-    if origin is list:
-        inner_model: BaseModel = get_args(model)[0]
-        return [inner_model.model_validate(item) for item in data]
-
-    return model(data)
+) -> None:
+    mobile_request(
+        session,
+        "DELETE",
+        "sajat/Bankszamla",
+    )
 
 
-def delete_bank_account_number(session: Auth_Session) -> None:
-    mobile_request(session, "DELETE", "sajat/Bankszamla")
-
-
-def delete_reservation(session: Auth_Session, uid: str) -> None:
+def delete_reservation(
+    session: Auth_Session,
+    uid: str,
+) -> None:
     mobile_request(
         session,
         "DELETE",
@@ -46,7 +56,10 @@ def delete_reservation(session: Auth_Session, uid: str) -> None:
     )
 
 
-def download_attachment(session: Auth_Session, uid: str) -> bytes:
+def download_attachment(
+    session: Auth_Session,
+    uid: str,
+) -> bytes:
     return mobile_request(
         session,
         "GET",
@@ -55,13 +68,14 @@ def download_attachment(session: Auth_Session, uid: str) -> bytes:
 
 
 def get_announced_tests(
-    session: Auth_Session, from_date: datetime = ..., to_date: datetime = ...
+    session: Auth_Session,
+    from_date: Optional[datetime] = None,
+    to_date: Optional[datetime] = None,
 ) -> list[AnnouncedTest]:
-    params: dict[str, str] = {}
-    if from_date is not ...:
-        params["datumTol"] = from_date.isoformat()
-    if to_date is not ...:
-        params["datumIg"] = to_date.isoformat()
+    params: dict[str, str] = filter_params(
+        datumTol=from_date,
+        datumIg=to_date,
+    )
 
     return mobile_request(
         session,
@@ -73,11 +87,14 @@ def get_announced_tests(
 
 
 def get_class_average(
-    session: Auth_Session, educationalTaskUid: str, subjectUid: str = ...
+    session: Auth_Session,
+    educationalTaskUid: str,
+    subjectUid: Optional[str] = None,
 ) -> list[ClassAverage]:
-    params: dict[str, str] = {"oktatasiNevelesiFeladatUid": educationalTaskUid}
-    if subjectUid is not ...:
-        params["tantargyUid"] = subjectUid
+    params: dict[str, str] = filter_params(
+        oktatasiNevelesiFeladatUid=educationalTaskUid,
+        tantargyUid=subjectUid,
+    )
 
     return mobile_request(
         session,
@@ -88,9 +105,13 @@ def get_class_average(
     )
 
 
-def get_class_master(session: Auth_Session, Uids: list[str] = ...) -> list[ClassMaster]:
-    if Uids is not ...:
-        params: dict[str, str] = {"Uids": " ".join(Uids)}
+def get_class_master(
+    session: Auth_Session,
+    Uids: Optional[list[str]] = None,
+) -> list[ClassMaster]:
+    params = filter_params(
+        Uids=" ".join(Uids),
+    )
 
     return mobile_request(
         session,
@@ -101,20 +122,27 @@ def get_class_master(session: Auth_Session, Uids: list[str] = ...) -> list[Class
     )
 
 
-def get_consulting_hour(session: Auth_Session, Uid: str) -> ConsultingHour:
+def get_consulting_hour(
+    session: Auth_Session,
+    Uid: str,
+) -> ConsultingHour:
     return mobile_request(
-        session, "GET", f"sajat/Fogadoorak/{Uid}", model=ConsultingHour
+        session,
+        "GET",
+        f"sajat/Fogadoorak/{Uid}",
+        model=ConsultingHour,
     )
 
 
 def get_consulting_hours(
-    session: Auth_Session, from_date: datetime = ..., to_date: datetime = ...
+    session: Auth_Session,
+    from_date: Optional[datetime] = None,
+    to_date: Optional[datetime] = None,
 ) -> list[ConsultingHour]:
-    params: dict[str, str] = {}
-    if from_date is not ...:
-        params["datumTol"] = from_date.isoformat()
-    if to_date is not ...:
-        params["datumIg"] = to_date.isoformat()
+    params: dict[str, str] = filter_params(
+        datumTol=from_date,
+        datumIg=to_date,
+    )
 
     return mobile_request(
         session,
@@ -125,42 +153,78 @@ def get_consulting_hours(
     )
 
 
-def get_device_state(session: Auth_Session) -> bool:
-    return mobile_request(session, "GET", "TargyiEszkoz/IsEszkozKiosztva").json()
+def get_device_state(
+    session: Auth_Session,
+) -> bool:
+    return mobile_request(
+        session,
+        "GET",
+        "TargyiEszkoz/IsEszkozKiosztva",
+    ).json()
 
 
 def get_evaluations(
-    session: Auth_Session, from_date: datetime = ..., to_date: datetime = ...
+    session: Auth_Session,
+    from_date: Optional[datetime] = None,
+    to_date: Optional[datetime] = None,
 ) -> list[Evaluation]:
-    params: dict[str, str] = {}
-    if from_date is not ...:
-        params["datumTol"] = from_date
-    if to_date is not ...:
-        params["datumIg"] = to_date
+    params: dict[str, str] = filter_params(
+        datumTol=from_date,
+        datumIg=to_date,
+    )
 
     return mobile_request(
-        session, "GET", "sajat/Ertekelesek", model=list[Evaluation], params=params
+        session,
+        "GET",
+        "sajat/Ertekelesek",
+        model=list[Evaluation],
+        params=params,
     )
 
 
-def get_groups(session: Auth_Session) -> list[Group]:
-    return mobile_request(session, "GET", "sajat/OsztalyCsoportok", model=list[Group])
+def get_groups(
+    session: Auth_Session,
+) -> list[Group]:
+    return mobile_request(
+        session,
+        "GET",
+        "sajat/OsztalyCsoportok",
+        model=list[Group],
+    )
 
 
-def get_guardian4t(session: Auth_Session) -> Guardian4T:
-    return mobile_request(session, "GET", "sajat/GondviseloAdatlap", model=Guardian4T)
+def get_guardian4t(
+    session: Auth_Session,
+) -> Guardian4T:
+    return mobile_request(
+        session,
+        "GET",
+        "sajat/GondviseloAdatlap",
+        model=Guardian4T,
+    )
 
 
-def get_homework(session: Auth_Session, id: str) -> Homework:
-    return mobile_request(session, "GET", f"sajat/HaziFeladatok/{id}", model=Homework)
+def get_homework(
+    session: Auth_Session,
+    id: str,
+) -> Homework:
+    return mobile_request(
+        session,
+        "GET",
+        f"sajat/HaziFeladatok/{id}",
+        model=Homework,
+    )
 
 
 def get_homeworks(
-    session: Auth_Session, from_date: datetime = ..., to_date: datetime = ...
+    session: Auth_Session,
+    from_date: datetime,
+    to_date: Optional[datetime] = None,
 ) -> list[Homework]:
-    params: dict[str, str] = {"datumTol": from_date.isoformat()}
-    if to_date is not ...:
-        params["datumIg"] = to_date.isoformat()
+    params: dict[str, str] = filter_params(
+        datumTol=from_date,
+        datumIg=to_date,
+    )
 
     return mobile_request(
         session,
@@ -171,88 +235,110 @@ def get_homeworks(
     )
 
 
-def get_lep_events(session: Auth_Session) -> list[LepEvent]:
-    return mobile_request(session, "GET", "Lep/Eloadasok", model=LepEvent)
+def get_lep_events(
+    session: Auth_Session,
+) -> list[LepEvent]:
+    return mobile_request(
+        session,
+        "GET",
+        "Lep/Eloadasok",
+        model=LepEvent,
+    )
 
 
-def get_lesson(session: Auth_Session, LessonUid: str) -> Lesson:
-    params: dict[str, str] = {"ororendElemUid": LessonUid}
+def get_lesson(
+    session: Auth_Session,
+    LessonUid: str,
+) -> Lesson:
+    params: dict[str, str] = filter_params(
+        ororendElemUid=LessonUid,
+    )
 
     return mobile_request(
         session,
         "GET",
-        "OrarendElem",
+        "sajat/OrarendElem",
         model=Lesson,
         params=params,
     )
 
 
 def get_lessons(
-    session: Auth_Session, from_date: datetime = ..., to_date: datetime = ...
+    session: Auth_Session,
+    from_date: Optional[datetime] = None,
+    to_date: Optional[datetime] = None,
 ) -> list[Lesson]:
-    params: dict[str, str] = {}
-    if from_date is not ...:
-        params["datumTol"] = from_date.isoformat()
-    if to_date is not ...:
-        params["datumIg"] = to_date.isoformat()
+    params: dict[str, str] = filter_params(
+        datumTol=from_date,
+        datumIg=to_date,
+    )
 
     return mobile_request(
         session,
         "GET",
-        "OrarendElem",
+        "sajat/OrarendElem",
         model=list[Lesson],
         params=params,
     )
 
 
 def get_notes(
-    session: Auth_Session, from_date: datetime = ..., to_date: datetime = ...
+    session: Auth_Session,
+    from_date: Optional[datetime] = None,
+    to_date: Optional[datetime] = None,
 ) -> list[Note]:
-    params: dict[str, str] = {}
-    if from_date is not ...:
-        params["datumTol"] = from_date.isoformat()
-    if to_date is not ...:
-        params["datumIg"] = to_date.isoformat()
+    params: dict[str, str] = filter_params(
+        datumTol=from_date,
+        datumIg=to_date,
+    )
 
     return mobile_request(
         session,
         "GET",
-        "Feljegyzesek",
+        "sajat/Feljegyzesek",
         model=list[Note],
         params=params,
     )
 
 
-def get_noticeboard_items(session: Auth_Session) -> list[NoticeBoardItem]:
+def get_noticeboard_items(
+    session: Auth_Session,
+) -> list[NoticeBoardItem]:
     return mobile_request(
-        session, "GET", "FaliujsagElemek", model=list[NoticeBoardItem]
+        session,
+        "GET",
+        "sajat/FaliujsagElemek",
+        model=list[NoticeBoardItem],
     )
 
 
 def get_ommissions(
-    session: Auth_Session, from_date: datetime = ..., to_date: datetime = ...
+    session: Auth_Session,
+    from_date: Optional[datetime] = None,
+    to_date: Optional[datetime] = None,
 ) -> list[Omission]:
-    params: dict[str, str] = {}
-    if from_date is not ...:
-        params["datumTol"] = from_date.isoformat()
-    if to_date is not ...:
-        params["datumIg"] = to_date.isoformat()
+    params: dict[str, str] = filter_params(
+        datumTol=from_date,
+        datumIg=to_date,
+    )
 
     return mobile_request(
         session,
         "GET",
-        "Mulasztasok",
+        "sajat/Mulasztasok",
         model=list[Omission],
         params=params,
     )
 
 
-def get_registration_state(session: Auth_Session) -> dict | str | int | list:
+def get_registration_state(
+    session: Auth_Session,
+) -> dict | str | int | list:
     return mobile_request(
         session,
         "GET",
-        "https://{institute_code}.e-kreta.hu/ellenorzo/v3/TargyiEszkoz/IsRegisztralt",
-    )
+        "TargyiEszkoz/IsRegisztralt",
+    ).json()
 
 
 def get_schoolyear_calendar(
@@ -266,36 +352,44 @@ def get_schoolyear_calendar(
     )
 
 
-def get_student(session: Auth_Session) -> Student:
-    return mobile_request(session, "GET", "TanuloAdatlap", model=Student)
+def get_student(
+    session: Auth_Session,
+) -> Student:
+    return mobile_request(
+        session,
+        "GET",
+        "sajat/TanuloAdatlap",
+        model=Student,
+    )
 
 
 def get_subject_average(
-    session: Auth_Session, educationalTaskUid: str
+    session: Auth_Session,
+    educationalTaskUid: str,
 ) -> list[SubjectAverage]:
-    params: dict[str, str] = {"oktatasiNevelesiFeladatUid": educationalTaskUid}
+    params: dict[str, str] = filter_params(
+        oktatasiNevelesiFeladatUid=educationalTaskUid,
+    )
 
     return mobile_request(
         session,
         "GET",
-        "Ertekelesek/Atlagok/OsztalyAtlagok",
+        "sajat/Ertekelesek/Atlagok/OsztalyAtlagok",
         model=list[SubjectAverage],
         params=params,
     )
 
 
 def get_timetable_weeks(
-    session: Auth_Session, start_week: datetime, no_weeks: Literal[1, 2, 3]
+    session: Auth_Session,
+    date_in_first_week: datetime,
+    weeks: Literal[1, 2, 3],
 ) -> list[TimeTableWeek]:
-    date = start_week.date()
-    monday = date - timedelta(days=date.weekday())
-    friday = monday + timedelta(days=6, weeks=no_weeks - 1)
-
-    params: dict[str, str] = {}
-    if monday is not ...:
-        params["orarendElemKezdoNapDatuma"] = monday.isoformat()
-    if friday is not ...:
-        params["orarendElemVegNapDatuma"] = friday.isoformat()
+    start, end = week_dates(date_in_first_week, weeks)
+    params: dict[str, str] = filter_params(
+        orarendElemKezdoNapDatuma=start,
+        orarendElemVegNapDatuma=end,
+    )
 
     return mobile_request(
         session,
@@ -323,19 +417,22 @@ def post_bank_account_number(
     mobile_request(
         session,
         "POST",
-        "Bankszamla",
+        "sajat/Bankszamla",
         json=json,
     )
     return None
 
 
 def post_contact(session: Auth_Session, email: str, phone_number: str) -> None:
-    data = {"email": email, "telefonszam": phone_number}
+    data = {
+        "email": email,
+        "telefonszam": phone_number,
+    }
 
     mobile_request(
         session,
         "POST",
-        "Elerhetoseg",
+        "sajat/Elerhetoseg",
         data=data,
     )
     return None
@@ -345,7 +442,7 @@ def post_covid_form(session: Auth_Session) -> None:
     mobile_request(
         session,
         "POST",
-        "https://{institute_code}.e-kreta.hu/ellenorzo/v3/Bejelentes/Covid",
+        "Bejelentes/Covid",
     )
     return None
 
@@ -388,7 +485,7 @@ def post_teszek_registration(
     mobile_request(
         session,
         "POST",
-        "https://{institute_code}.e-kreta.hu/ellenorzo/v3/TargyiEszkoz/Regisztracio",
+        "TargyiEszkoz/Regisztracio",
         data=data,
     )
     return None
@@ -423,21 +520,26 @@ def update_guardian4T(
     mobile_request(
         session,
         "PUT",
-        "GondviseloAdatlap",
+        "sajat/GondviseloAdatlap",
         data=data,
     )
     return None
 
 
 def update_LEP_event_permission(
-    session: Auth_Session, eventId: int, isPermitted: bool
+    session: Auth_Session,
+    eventId: int,
+    isPermitted: bool,
 ) -> None:
-    json = {"EloadasId": eventId, "Dontes": isPermitted}
+    json = {
+        "EloadasId": eventId,
+        "Dontes": isPermitted,
+    }
 
     mobile_request(
         session,
         "POST",
-        "https://{institute_code}.e-kreta.hu/ellenorzo/v3/Lep/Eloadasok/GondviseloEngedelyezes",
+        "Lep/Eloadasok/GondviseloEngedelyezes",
         json=json,
     )
     return None

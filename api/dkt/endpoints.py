@@ -1,34 +1,18 @@
-from datetime import datetime, timedelta
-from typing import Literal, TypeVar, Type, get_origin, get_args, TYPE_CHECKING
-from .models import *
-from ..idp.auth_session import Auth_Session
-from requests import Response
-from pydantic import BaseModel
+from __future__ import annotations
 
+from functools import partial
+from typing import TYPE_CHECKING, Literal, Optional
 
-T = TypeVar("T")
+from ..utils.utils import filter_params, request_category, week_dates
 
+# from .models import ()
 
-def dkt_request(
-    session: Auth_Session,
-    method: Literal["GET", "DELETE", "POST", "PUT"],
-    url: str,
-    *args,
-    model: Type[T] = Response,
-    **kwargs,
-) -> T:
-    url = "https://kretadktapi.e-kreta.hu/dktapi/" + url
+if TYPE_CHECKING:
+    from datetime import datetime
 
-    r = session.request(method, url, *args, **kwargs)
+    from ..idp.auth_session import Auth_Session
 
-    if model is Response:
-        return r
-
-    data = r.json()
-
-    origin = get_origin(model)
-    if origin is list:
-        inner_model: BaseModel = get_args(model)[0]
-        return [inner_model.model_validate(item) for item in data]
-
-    return model(data)
+mobile_request = partial(
+    request_category,
+    "https://kretadktapi.e-kreta.hu/dktapi/",
+)

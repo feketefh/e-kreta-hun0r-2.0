@@ -1,7 +1,9 @@
+from typing import Literal, Self
+
+import requests
+
 from .auth_token import Auth_Token
 from .login import login
-import requests
-from typing import Self, Literal
 
 
 class Auth_Session(requests.Session):
@@ -38,7 +40,15 @@ class Auth_Session(requests.Session):
         token = Auth_Token(**r)
         return cls(token)
 
-    def request(self, method: Literal["CONNECT", "DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"], url: str, *args, **kwargs) -> requests.Response:
+    def request(
+        self,
+        method: Literal[
+            "CONNECT", "DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"
+        ],
+        url: str,
+        *args,
+        **kwargs
+    ) -> requests.Response:
         # fill the institute code in the url
         if "{institute_code}" in url:
             url = url.format(institute_code=self.token.body.kreta_institute_code)
@@ -52,7 +62,11 @@ class Auth_Session(requests.Session):
         try:
             response.raise_for_status()
         except requests.exceptions.HTTPError as e:
-            if response.headers.get("Content-Type", "").lower().startswith("application/json"):
+            if (
+                response.headers.get("Content-Type", "")
+                .lower()
+                .startswith("application/json")
+            ):
                 json: dict = response.json()
                 e.add_note(
                     json.get("Message", json.get("error", "unknown error")),

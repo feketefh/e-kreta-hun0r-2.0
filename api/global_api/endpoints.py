@@ -14,5 +14,5 @@ if TYPE_CHECKING:
 
 mobile_request = partial(
     request_category,
-    "https://eugyintezes.e-kreta.hu/api/v1/",
+    "",
 )

@@ -1,7 +1,9 @@
-import requests
-import jwt
-from pydantic import BaseModel, Field
 from datetime import datetime, timezone
+from typing import Optional
+
+import jwt
+import requests
+from pydantic import BaseModel, Field
 
 
 class Header(BaseModel):
@@ -81,7 +83,7 @@ class Id_Token(BaseModel):
     """audience (who or what the token is intended for)"""
     amr: list[str] = Field(alias="amr", frozen=True)
     """Authentication Methods array"""
-    nonce: str = Field(alias="nonce", frozen=True)
+    nonce: Optional[str] = Field(alias="nonce", frozen=True, default=None)
     """Unique value associating request to token"""
     at_hash: str = Field(alias="at_hash", frozen=True)
     """Access Token hash value"""

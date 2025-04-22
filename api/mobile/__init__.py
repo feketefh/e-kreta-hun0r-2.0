@@ -1,4 +1,3 @@
-from . import endpoints
-from . import models
+from . import endpoints, models
 
 __all__ = ["endpoints", "models"]
