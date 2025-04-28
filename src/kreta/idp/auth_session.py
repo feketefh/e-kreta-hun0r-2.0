@@ -2,8 +2,8 @@ from typing import Literal, Self
 
 import requests
 
-from .auth_token import Auth_Token
 from .login import login
+from .auth_token import Auth_Token
 
 
 class Auth_Session(requests.Session):
