@@ -4,13 +4,9 @@ e-kreta-hunor-2.0 is an api wrapper for the e-kreta system
 
 ## installation
 
-for now download the repo and install requirements.txt
-
 ```bash
-py -m pip install -r requirements.txt
+py -m pip install e-kreta-hun0r
 ```
-
-later i plan to add it on pypi
 
 ## Usage
 
