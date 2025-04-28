@@ -15,13 +15,27 @@ later i plan to add it on pypi
 ## Usage
 
 ```python
-import json
-from api import idp
-from api.mobile import endpoints
+import os
 
-with idp.Auth_session.login(username, pwd, institute_code) as session:
-    groups = endpoints.get_groups(session)
-    print(json.dumps(groups.model_dump_json(indent=4)))
+from kreta.mobile import endpoints, models
+from kreta.idp import Auth_Session
+
+username = os.getenv("username")
+pwd = os.getenv("pwd")
+institiute_code = os.getenv("institute_code")
+
+with Auth_Session.login(username, pwd, institiute_code) as session:
+    response = endpoints.get_notes(session)
+    print(response)
+
+    session.refresh() # it's automatically done when needed
+  
+    response = endpoints.get_device_state(session)
+    print(response)
+  
+    session.invalidate() # invalidates the refresh token so remove if login is saved
+
+
 ```
 
 ## Contributing
