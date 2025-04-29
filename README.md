@@ -47,7 +47,7 @@ Reccomended to use `session.invalidate()` if the refresh token wont be saved as 
 Important is that for the `institute_code` parameter the second code of the school is needed. 
 check your schools id [here](https://intezmenykereso.e-kreta.hu/)
 
-![login_code](image/README/login_code.png)
+![login_code](https://github.com/hun0r/e-kreta-hun0r-2.0/blob/main/image/README/login_code.png?raw=true)
 
 ## Contributing
 
