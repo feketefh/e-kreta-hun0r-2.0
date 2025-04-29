@@ -4,11 +4,15 @@ e-kreta-hunor-2.0 is an api wrapper for the e-kreta system
 
 ## installation
 
+now available on [PyPI](https://pypi.org/project/e-kreta-hun0r/)
+
 ```bash
 py -m pip install e-kreta-hun0r
 ```
 
 ## Usage
+
+quick example
 
 ```python
 import os
@@ -33,6 +37,17 @@ with Auth_Session.login(username, pwd, institiute_code) as session:
 
 
 ```
+
+Reccomended to use `with` context maneger to properly close the connection.
+
+Reccomended to use `session.invalidate()` if the refresh token wont be saved as it is required in the process to revoke it.
+
+`sessiion.refresh()` refreshes the access token. Usually not required as it done automatically when needed.
+
+Important is that for the `institute_code` parameter the second code of the school is needed. 
+check your schools id [here](https://intezmenykereso.e-kreta.hu/)
+
+![login_code](image/README/login_code.png)
 
 ## Contributing
 
