@@ -6,7 +6,7 @@
 
 <details>
 <summary><strong>🇬🇧 English</strong></summary>
-e-kreta-hunor-2.0 is an api wrapper for the e-kreta system
+e-kreta-hunor-2.0 is an unofficial api wrapper for the e-kreta system
 
 ## installation
 
