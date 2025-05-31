@@ -102,7 +102,7 @@ with Auth_Session.login(username, pwd, institiute_code) as session:
     response = endpoints.get_device_state(session)
     print(response)
   
-    session.invalidate() # inalidálja a refresh_token-t ha azt elmentjük ezt el kell hagyni
+    session.invalidate() # invalidálja a refresh_token-t ha azt elmentjük ezt el kell hagyni
 
 
 ```
