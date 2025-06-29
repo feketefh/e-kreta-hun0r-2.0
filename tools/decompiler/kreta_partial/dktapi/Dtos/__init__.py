@@ -1,0 +1,20 @@
+from .ClassworkAttachment import ClassworkAttachment
+from .Classwork import Classwork
+from .ClassworkSolutionAttachment import ClassworkSolutionAttachment
+from .ClassworkSolutionAttachmentPost import ClassworkSolutionAttachmentPost
+from .ClassworkSolutionPut import ClassworkSolutionPut
+from .ClassworkTeachingMaterial import ClassworkTeachingMaterial
+from .ClassworkTeachingMaterialPost import ClassworkTeachingMaterialPost
+from .DriversLicenseRegistrationStatus import DriversLicenseRegistrationStatus
+from .HomeworkSolutionAttachment import HomeworkSolutionAttachment
+from .HomeworkSolutionAttachmentPost import HomeworkSolutionAttachmentPost
+from .HomeworkSolutionPut import HomeworkSolutionPut
+from .LanguageSubTask import LanguageSubTask
+from .LanguageSubTaskSubmission import LanguageSubTaskSubmission
+from .LanguageTask import LanguageTask
+from .LanguageTaskSubmission import LanguageTaskSubmission
+from .SubmittedClasswork import SubmittedClasswork
+from .SubmittedHomework import SubmittedHomework
+__all__ = [
+    ClassworkAttachment, Classwork, ClassworkSolutionAttachment, ClassworkSolutionAttachmentPost, ClassworkSolutionPut, ClassworkTeachingMaterial, ClassworkTeachingMaterialPost, DriversLicenseRegistrationStatus, HomeworkSolutionAttachment, HomeworkSolutionAttachmentPost, HomeworkSolutionPut, LanguageSubTask, LanguageSubTaskSubmission, LanguageTask, LanguageTaskSubmission, SubmittedClasswork, SubmittedHomework
+]
